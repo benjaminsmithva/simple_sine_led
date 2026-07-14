@@ -1,0 +1,4 @@
+mach create
+machine LoadPlatformDescription @platforms/stm32f4_discovery_full.repl
+sysbus LoadELF @build/firmware.elf
+machine StartGdbServer 3333

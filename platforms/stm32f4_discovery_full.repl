@@ -1,0 +1,23 @@
+using "platforms/boards/stm32f4_discovery.repl"
+
+// Stock board uses systickFrequency: 72000000. This firmware assumes an
+// undivided 16 MHz HSI SysTick clock (reload=15999 for a 1ms tick). Unfixed,
+// the emulated blink runs ~4.5x too fast (toggles every ~0.22s instead of 1.0s).
+nvic:
+    systickFrequency: 16000000
+
+// Real STM32F407 has 64KB of CPU-only CCM RAM at 0x10000000; missing from
+// Renode's stock stm32f4.repl entirely.
+ccmram: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x10000
+
+// Stock stm32f4.repl models sram as 256KB and flash as 2MB (likely copied
+// from a bigger STM32F4 variant). The real STM32F407VG has 128KB of
+// contiguous main SRAM (112KB SRAM1 + 16KB SRAM2, @ 0x20000000) and 1MB of
+// flash (@ 0x08000000). Corrected here for accuracy in case future firmware
+// relies on correct memory sizing.
+sram:
+    size: 0x20000
+
+flash:
+    size: 0x100000

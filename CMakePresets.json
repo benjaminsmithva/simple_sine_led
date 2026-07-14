@@ -1,0 +1,23 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "stm32",
+      "displayName": "STM32F407 sine LED",
+      "description": "Sine-wave PWM LED brightness demo",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/arm-none-eabi.cmake",
+        "CMAKE_BUILD_TYPE": "MinSizeRel"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "stm32",
+      "displayName": "Build firmware",
+      "configurePreset": "stm32"
+    }
+  ]
+}
