@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>   /* newlib 4.x expands _REENT_INIT_PTR() to a memset() call */
 #include <reent.h>
 
 /* ── Heap allocator ──────────────────────────────────────────────────────── */

@@ -60,9 +60,10 @@ cmake --build --preset stm32          # -> build/firmware.elf, build/firmware.bi
 cmake --build build --target flash    # program via OpenOCD/ST-LINK
 ```
 
-Other useful targets: `cmake --build build --target size`, `... --target
-disasm`, `... --target debug` (starts an OpenOCD GDB server on `:3333`
-without programming — same workflow as `first_embedded`'s README).
+Other useful targets: `cmake --build build --target disasm`, `... --target
+debug` (starts an OpenOCD GDB server on `:3333` without programming — same
+workflow as `first_embedded`'s README). The firmware size report is printed
+automatically at the end of every build.
 
 ## Running under Renode
 
@@ -99,8 +100,10 @@ $ renode --console scripts/sine_demo_gdb.resc     # starts halted, GDB server on
 ```
 In a second terminal:
 ```bash
+# Linux
 gdb-multiarch build/firmware.elf
-# arm-none-eabi-gdb build/firmware.elf # on macos
+# MacOS
+arm-none-eabi-gdb build/firmware.elf # 
 (gdb) target remote :3333
 (gdb) break main
 (gdb) continue
