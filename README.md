@@ -48,6 +48,12 @@ STM32F4 Discovery platform — see the **Limitation** note at the bottom.
 
 ## Building and flashing on real hardware
 
+Toolchain setup (ARM GCC cross toolchain, OpenOCD, Ninja, CMake) is identical to
+`../first_embedded` — see its **Prerequisites** section for the Ubuntu `apt` line
+and the macOS/Homebrew equivalents (`brew install --cask gcc-arm-embedded` +
+`brew install open-ocd ninja cmake`; note `arm-none-eabi-gdb`, not
+`gdb-multiarch`, on macOS).
+
 ```bash
 cmake --preset stm32
 cmake --build --preset stm32          # -> build/firmware.elf, build/firmware.bin
@@ -94,6 +100,7 @@ $ renode --console scripts/sine_demo_gdb.resc     # starts halted, GDB server on
 In a second terminal:
 ```bash
 gdb-multiarch build/firmware.elf
+# arm-none-eabi-gdb build/firmware.elf # on macos
 (gdb) target remote :3333
 (gdb) break main
 (gdb) continue
