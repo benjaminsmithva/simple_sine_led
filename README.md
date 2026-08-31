@@ -48,15 +48,22 @@ STM32F4 Discovery platform — see the **Limitation** note at the bottom.
 
 ## Building and flashing on real hardware
 
+Toolchain setup (ARM GCC cross toolchain, OpenOCD, Ninja, CMake) is identical to
+`../first_embedded` — see its **Prerequisites** section for the Ubuntu `apt` line
+and the macOS/Homebrew equivalents (`brew install --cask gcc-arm-embedded` +
+`brew install open-ocd ninja cmake`; note `arm-none-eabi-gdb`, not
+`gdb-multiarch`, on macOS).
+
 ```bash
 cmake --preset stm32
 cmake --build --preset stm32          # -> build/firmware.elf, build/firmware.bin
 cmake --build build --target flash    # program via OpenOCD/ST-LINK
 ```
 
-Other useful targets: `cmake --build build --target size`, `... --target
-disasm`, `... --target debug` (starts an OpenOCD GDB server on `:3333`
-without programming — same workflow as `first_embedded`'s README).
+Other useful targets: `cmake --build build --target disasm`, `... --target
+debug` (starts an OpenOCD GDB server on `:3333` without programming — same
+workflow as `first_embedded`'s README). The firmware size report is printed
+automatically at the end of every build.
 
 ## Running under Renode
 
@@ -93,7 +100,10 @@ $ renode --console scripts/sine_demo_gdb.resc     # starts halted, GDB server on
 ```
 In a second terminal:
 ```bash
+# Linux
 gdb-multiarch build/firmware.elf
+# MacOS
+arm-none-eabi-gdb build/firmware.elf # 
 (gdb) target remote :3333
 (gdb) break main
 (gdb) continue
