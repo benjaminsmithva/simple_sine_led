@@ -8,15 +8,16 @@
 
  // Test Change
 
+
 #include "stm32f407.h"
 #include <math.h>
+#include <uart.c>
 
 #define SYSCLK_HZ        16000000UL   /* HSI, no PLL */
-#define PWM_PSC          15U          /* 16MHz / (15+1) = 1MHz counter clock */
-#define PWM_ARR          999U         /* 1MHz / 1000 = 1kHz PWM carrier, 1000-step duty */
 #define STEP_INTERVAL_MS 10U          /* x steps every 10ms -> 360*10ms = 3.6s full sine cycle */
-#define SINE_STEPS       360U         /* x loops 0..359 (degrees) */
+#define TIM4_ARR_VAL     1024    /* 1000 steps, 0..999 */
 #define SINE_PI          3.14159265358979323846f
+
 
 static volatile uint32_t g_ticks = 0;
 
@@ -30,46 +31,54 @@ static void systick_init(void) {
     SYSTICK->CTRL = SYSTICK_CTRL_CLKSOURCE | SYSTICK_CTRL_TICKINT | SYSTICK_CTRL_ENABLE;
 }
 
-static void led_pwm_init(void) {
-    RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN;
-    (void)RCC->AHB1ENR;               /* read-back before touching GPIOD */
-    RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
-    (void)RCC->APB1ENR;               /* read-back before touching TIM4 */
+static void setRegisterBits(uint32_t *reg, uint32_t LSB, uint32_t width, uint32_t value)
+{
+    uint32_t mask = ((1U << width) - 1U) << LSB;
 
-    /* PD12 -> AF2 (TIM4_CH1) */
-    GPIOD->MODER  &= ~(0x3UL << (12 * 2));
-    GPIOD->MODER  |=  (GPIO_MODER_AF << (12 * 2));
-    GPIOD->AFR[1] &= ~(0xFUL << ((12 - 8) * 4));
-    GPIOD->AFR[1] |=  (0x2UL << ((12 - 8) * 4));   /* AF2 = TIM3/4/5 */
+    *reg = (*reg & ~mask) | ((value << LSB) & mask);
+}
 
-    TIM4->PSC   = PWM_PSC;
-    TIM4->ARR   = PWM_ARR;
-    TIM4->CCR1  = 0;
-    TIM4->CCMR1 = (TIM4->CCMR1 & ~TIM_CCMR1_OC1M_MSK)
-                | TIM_CCMR1_OC1M_PWM1 | TIM_CCMR1_OC1PE;
-    TIM4->CCER |= TIM_CCER_CC1E;
-    TIM4->CR1  |= TIM_CR1_ARPE;
-    TIM4->EGR   = TIM_EGR_UG;          /* force update: load PSC/ARR/CCR shadow regs */
-    TIM4->CR1  |= TIM_CR1_CEN;
+static void led_pin_init(void) {
+
+    //Enable perfipherals
+    setRegisterBits(&RCC->AHB1ENR, 3, 1, 0b1);  // ENABLE GPIOD
+    setRegisterBits(&RCC->APB1ENR, 2, 1, 0b1);  // ENABLE TIM4
+
+    //Configure PD12
+    setRegisterBits(&GPIOD->AFR[1], 16, 4, 0b0010);  // Directs PD12 to TIM4_CH1
+    setRegisterBits(&GPIOD->MODER, 24, 2, 0b10);  // Set PD12 to GPIO AFR mode
+    setRegisterBits(&GPIOD->OTYPER, 12, 1, 0b0);  // Set PD12 to push-pull
+    setRegisterBits(&GPIOD->OSPEEDR, 24, 2, 0b11); // Set PD12 to high speed
+
+    //Configure TIM4
+    TIM4->CR1 = 0b0000000000000001; // Enable TIM4, set ARPE
+    TIM4->PSC = 1; // Timer prescaler
+    TIM4->ARR = TIM4_ARR_VAL; // Auto-reload register value
+    TIM4->CCMR1 = 0b00000001110000; // Set output compare mode to PWM mode 1 for channel 1
+    TIM4->CCER = 0b0000000000000001; // Enable output for channel 1
+
+
 }
 
 int main(void) {
     systick_init();
-    led_pwm_init();
+    //led_pwm_init();
+    led_pin_init();
+    uart_init();
 
-    uint32_t last = 0;
     uint32_t x = 0;   /* integer loop variable, degrees, wraps 0..359 forever */
+    uint32_t next = 0;
 
     while (1) {
-        uint32_t now = g_ticks;
-        if ((now - last) >= STEP_INTERVAL_MS) {
-            last = now;
-            float angle = (float)x * (2.0f * SINE_PI / (float)SINE_STEPS);
-            float y     = sinf(angle);              /* -1..1 */
-            float duty  = (y + 1.0f) * 0.5f;        /* 0..1  */
-            TIM4->CCR1  = (uint32_t)(duty * (float)PWM_ARR);
-            x++;
-            if (x >= SINE_STEPS) x = 0;
+        if (g_ticks > next) 
+        {
+            next = g_ticks + STEP_INTERVAL_MS;
+
+            if (x++ > 359) x = 0;
+            float angle = (float)x * 0.0174533f;
+            float y     = 0.5f * sinf(angle) + 0.5;              /* -1..1 */
+            //uart_put_float(y);
+            TIM4->CCR1 = (uint16_t)((float)TIM4_ARR_VAL * y);
         }
     }
 }

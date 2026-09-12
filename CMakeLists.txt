@@ -18,6 +18,7 @@ add_executable(firmware.elf
     startup_stm32f407.s
     syscalls.c
     main.c
+    uart.c
 )
 
 # Header search path: project root (for stm32f407.h)
